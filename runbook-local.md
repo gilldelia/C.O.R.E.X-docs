@@ -1,11 +1,11 @@
-# COREX Runbook Local – Configuration & Secrets
+# COREX Runbook Local – Configuration, Secrets, Logs
 
 ## Configuration sources (precedence)
 _Ordered from lowest to highest precedence (later sources override earlier ones)._
 1. `appsettings.json` (required, checked in, no secrets)
 2. `appsettings.{ENVIRONMENT}.json` (optional override, e.g. Development)
-3. Environment variables prefixed `COREX__`
-4. User secrets (`dotnet user-secrets`) scoped to `src/Corex.App/Corex.App.csproj`
+3. User secrets (`dotnet user-secrets`) scoped to `src/Corex.App/Corex.App.csproj`
+4. Environment variables prefixed `COREX__` (overrides user secrets)
 
 ## Required secrets (fail fast at startup)
 - `ExternalServices:Slack:BotToken`
@@ -13,7 +13,7 @@ _Ordered from lowest to highest precedence (later sources override earlier ones)
 - `ExternalServices:Trello:ApiKey`
 - `ExternalServices:Trello:ApiToken`
 
-If any is missing/empty, the app exits with code `1` and logs the missing keys.
+Startup exits with code `1` if required configuration (including these secrets) is missing or invalid (options validation failure).
 
 ## Set secrets locally (recommended)
 ```bash
@@ -27,8 +27,9 @@ DOTNET_ENVIRONMENT=Development dotnet user-secrets set "ExternalServices:Trello:
 
 ## Using `.env` (optional)
 - Copy `.env.example` to `.env` at repo root.
-- Fill values; they map to the same keys via the `COREX__` prefix.
-- Export to your shell before running (PowerShell example):
+- Fill values for `COREX__EXTERNALSERVICES__*` keys.
+- Note: Environment variables override user-secrets due to configuration source precedence.
+- Export them to your shell before running. PowerShell example:
 ```powershell
 Get-Content .env | ForEach-Object {
   if ($_ -and $_ -notmatch '^#') {
@@ -36,6 +37,13 @@ Get-Content .env | ForEach-Object {
   }
 }
 ```
+
+## Logging (Serilog)
+- Structured logs with correlation in scope: `correlation_id`, `agent_id`, `event_id`, plus `environment`/`application`.
+- Sinks:
+  - Console (structured template)
+  - File `logs/corex.log` (rolling daily)
+- Minimum level is `Information` by default; Development environment overrides to `Debug` via `appsettings.Development.json`.
 
 ## Run locally
 ```bash
@@ -46,4 +54,4 @@ DOTNET_ENVIRONMENT=Development dotnet run --project src/Corex.App/Corex.App.cspr
 ```bash
 dotnet test
 ```
-This ensures config validation and tests are healthy after changes.
+Ensures config validation and structured logging pipeline are healthy.
