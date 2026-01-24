@@ -14,6 +14,11 @@ Epic 0 a établi un socle local-first (config, logs, erreurs, scripts, fakes). E
 - Résilience Slack (Socket Mode) avec retry/circuit breaker fakes ou clients simulés (local-first).
 - Documentation des décisions d’architecture et des invariants du runtime.
 
+### RunId — génération et propagation
+- Source externe (ex. message Slack) : `RunId.FromExternal(externalId)` → GUID déterministe dérivé de l’ID externe (SHA-256 → GUID).
+- Source runtime : `RunId.NewRuntime(seed?)` ; seed par `event_id` pour stabilité intra-event, sinon GUID nouveau.
+- RunId attaché dès l’entrée (`AgentInboundEvent`, `InboundEnvelope`) et propagé dans scopes de log (`run_id`).
+
 ## Hors périmètre (OUT)
 - Fonctionnalités Slack utilisateur réelles (messages publics, threads, uploads, RTM live).
 - Fonctionnalités Trello utilisateur réelles (cartes, listes, boards).
