@@ -33,6 +33,8 @@
 
 # COREX
 
+[![CI](https://github.com/gilldelia/C.O.R.E.X/actions/workflows/ci.yml/badge.svg)](https://github.com/gilldelia/C.O.R.E.X/actions/workflows/ci.yml)
+
 ## Quickstart (5 minutes)
 1. Prérequis : SDK .NET 10.0 en préversion (installer la dernière préversion depuis https://dotnet.microsoft.com/).
 2. Restore : `dotnet restore C.O.R.E.X.sln` (ou `./scripts/test.ps1` fera le restore).
@@ -49,6 +51,10 @@ Notes
 ## Dev loop
 - Boucle rapide : `./scripts/run.ps1 -Dev -Watch`, puis `./scripts/test.ps1` avant commit.
 - Lint check : `./scripts/lint.ps1` (échoue si format/style non conforme).
+
+## CI / PR
+- CI (push/PR master/main) : restore + lint (format verify) + build + tests.
+- PR : build et tests obligatoires.
 
 ## Docs utiles
 - `docs/runbook-local.md` : config/secrets/logs.
