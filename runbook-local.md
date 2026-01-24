@@ -1,5 +1,13 @@
 # COREX Runbook Local – Configuration, Secrets, Logs
 
+## Setup checklist (local)
+- SDK : .NET 10 (preview acceptable)
+- Commandes : `dotnet --info` OK, PowerShell disponible
+- Restore : `dotnet restore C.O.R.E.X.sln` (ou `./scripts/test.ps1`)
+- Secrets : renseignés (Slack/Trello) via user-secrets ou env (voir ci-dessous)
+- Logs : dossier `logs/` accessible en écriture
+- Hot reload : `./scripts/run.ps1 -Dev -Watch` (optionnel)
+
 ## Configuration sources (precedence)
 _Ordered from lowest to highest precedence (later sources override earlier ones)._
 1. `appsettings.json` (required, checked in, no secrets)
@@ -14,6 +22,13 @@ _Ordered from lowest to highest precedence (later sources override earlier ones)
 - `ExternalServices:Trello:ApiToken`
 
 Startup exits with code `1` if required configuration (including these secrets) is missing or invalid (options validation failure).
+
+### Environment variables (examples)
+- `COREX__EXTERNALSERVICES__SLACK__BOTTOKEN`
+- `COREX__EXTERNALSERVICES__SLACK__SIGNINGSECRET`
+- `COREX__EXTERNALSERVICES__TRELLO__APIKEY`
+- `COREX__EXTERNALSERVICES__TRELLO__APITOKEN`
+- `DOTNET_ENVIRONMENT=Development` (dev mode)
 
 ## Set secrets locally (recommended)
 ```bash
@@ -44,6 +59,13 @@ Get-Content .env | ForEach-Object {
   - Console (structured template)
   - File `logs/corex.log` (rolling daily)
 - Minimum level is `Information` by default; Development environment overrides to `Debug` via `appsettings.Development.json`.
+
+## Debug / diagnostic scenarios
+- Voir en direct : `./scripts/run.ps1 -Dev` (console, niveau Debug) ou `-Watch` pour hot reload.
+- Fichiers de logs : `logs/corex.log` (rolling daily). Supprimables si trop volumineux.
+- Ports : application console, pas d’écoute HTTP dans l’état actuel (fakes Slack/Trello). Aucun port réservé.
+- Exceptions globales : handlers AppDomain/TaskScheduler, exit codes (0 ok, 1 erreur, 2 config, 130 annulation). Vérifier la console ou le fichier de logs.
+- Resilience I/O : retry + circuit breaker (Polly) enregistrés. Une indispo I/O ne stoppe pas le process, vérifier les warnings dans les logs.
 
 ## Run locally
 ```powershell
