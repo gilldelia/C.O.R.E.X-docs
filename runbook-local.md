@@ -46,12 +46,25 @@ Get-Content .env | ForEach-Object {
 - Minimum level is `Information` by default; Development environment overrides to `Debug` via `appsettings.Development.json`.
 
 ## Run locally
-```bash
-DOTNET_ENVIRONMENT=Development dotnet run --project src/Corex.App/Corex.App.csproj
+```powershell
+# Dev logs + hot reload
+./scripts/run.ps1 -Dev -Watch
+
+# Run once (debug)
+./scripts/run.ps1 -Dev
 ```
 
 ## Verify
-```bash
-dotnet test
+```powershell
+./scripts/test.ps1
 ```
 Ensures config validation and structured logging pipeline are healthy.
+
+## Lint / format
+```powershell
+# Check formatting/style (no changes)
+./scripts/lint.ps1
+
+# Apply formatting
+./scripts/format.ps1
+```
