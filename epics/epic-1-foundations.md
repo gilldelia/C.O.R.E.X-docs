@@ -19,6 +19,15 @@ Epic 0 a établi un socle local-first (config, logs, erreurs, scripts, fakes). E
 - Source runtime : `RunId.NewRuntime(seed?)` ; seed par `event_id` pour stabilité intra-event, sinon GUID nouveau.
 - RunId attaché dès l’entrée (`AgentInboundEvent`, `InboundEnvelope`) et propagé dans scopes de log (`run_id`).
 
+### Modèle de concurrence de la boucle Ralph
+- Modèle choisi : boucle single-consumer (un worker) alimentée par une queue thread-safe; sérialisation stricte du traitement des événements.
+- Motifs : limiter la complexité de synchronisation, garantir l’ordre des événements et faciliter la déduplication intra-process, éviter les effets de bord partagés.
+- Contraintes :
+  - Inbound multi-thread -> enqueue; consommation unique -> pas de locks sur le handler métier.
+  - Dédup en mémoire reste nécessaire (replay/retry) et doit être implémentée explicitement. Idempotence requise côté action métier.
+  - Cancellation coopérative; aucune exception d’agent ne doit stopper la boucle (log + continue).
+  - Extensible vers multi-consumer ultérieurement via configuration, mais Epic 1 = single-consumer.
+
 ## Hors périmètre (OUT)
 - Fonctionnalités Slack utilisateur réelles (messages publics, threads, uploads, RTM live).
 - Fonctionnalités Trello utilisateur réelles (cartes, listes, boards).
