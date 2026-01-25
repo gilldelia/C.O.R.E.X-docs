@@ -31,10 +31,29 @@ Epic 1 a introduit le runtime (Ralph loop), la modélisation du RunId, la propag
 - Multi-consumer concurrent: rejeté pour Epic 1 (complexité de synchronisation, ordre non garanti). Évolutif plus tard via config.
 - RunId aléatoire uniquement runtime: rejeté (perte de déterminisme externe et de lien avec messageId).
 
+## Mises à jour Epic 2
+
+### Déduplication RunId (Sprint 2.1)
+- `InMemoryRunIdDeduplicator` ajouté dans `Corex.Runtime`.
+- Un RunId ne peut déclencher qu'une seule action métier (invariant strict).
+- Duplicats loggés avec `duplicate_runid_dropped` et compteur incrémenté.
+- Dédup appliquée dans la boucle consume de `RalphRuntime`, avant tout traitement.
+
+### Backpressure observable (Sprint 2.2)
+- Compteur `events.dropped` et taux par minute (`rate_per_minute`) loggés sur chaque drop.
+- Log structuré `backpressure_drop` avec Agent, EventId, RunId.
+- Aucun drop silencieux ; DropWrite conservé, single-consumer préservé.
+
+### État dégradé (Sprint 2.3)
+- Seuil de 3 échecs consécutifs inbound avant entrée en mode `degraded`.
+- Log `runtime.degraded=true` à l'entrée, `runtime.degraded=false` à la sortie.
+- Runtime jamais en crash sur Slack down ; backoff max 10s.
+
 ## Impacts
-- Tests ajoutés/ajustés: RunId déterministe, propagation scopes, backoff/retry inbound, ordre séquentiel, backpressure.
+- Tests ajoutés/ajustés: RunId déterministe, propagation scopes, backoff/retry inbound, ordre séquentiel, backpressure, dédup RunId, état dégradé.
 - CI exécute format + tests; runtime reste local-first, sans dépendance cloud.
 
 ## Liens
 - Epic 1 Foundations: `docs/epics/epic-1-foundations.md`
-- Code: `Corex.Runtime` (RalphRuntime), `Corex.Core.Domain` (RunId, AgentInboundEvent, InboundEnvelope), tests runtime/core.
+- Epic 2 Foundations: `docs/epics/epic-2-foundations.md`
+- Code: `Corex.Runtime` (RalphRuntime, InMemoryRunIdDeduplicator), `Corex.Core.Domain` (RunId, AgentInboundEvent, InboundEnvelope), tests runtime/core.

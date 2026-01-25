@@ -1,4 +1,4 @@
-# Epic 1 — Foundations (Runtime & Traçabilité)
+﻿# Epic 1 — Foundations (Runtime & Traçabilité)
 
 ## Objectif
 Mettre en place le runtime COREX (Corex.Runtime) et la traçabilité de bout en bout, en migrant la boucle Ralph, en modélisant le RunId et en assurant la résilience minimale côté Slack (Socket Mode) sans dépendance cloud ni fonctionnalités utilisateur Slack/Trello.
@@ -83,3 +83,4 @@ Epic 0 a établi un socle local-first (config, logs, erreurs, scripts, fakes). E
 
 ## Revue clôturée
 - (À remplir à la fin de l’Epic)
+

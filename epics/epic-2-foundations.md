@@ -1,4 +1,4 @@
-# Epic 2 — Foundations (Robustesse Runtime)
+﻿# Epic 2 — Foundations (Robustesse Runtime)
 
 ## Objectif
 Durcir le Runtime COREX (Ralph loop) pour garantir robustesse, backpressure maîtrisée, résilience I/O et traçabilité stricte, en faisant de ce document le contrat unique de l’Epic 2.
@@ -48,10 +48,11 @@ Epic 1 a livré le Runtime, la modélisation/propagation du RunId, un modèle de
 - Pas de persistance durable obligatoire (in-memory accepté) si la robustesse runtime est couverte par tests.
 
 ## Checklist fin d’Epic
-- [ ] Document relu/validé et utilisé par toutes les US 2.x
-- [ ] Invariants Runtime explicités et respectés (RunId, idempotence, backpressure, résilience, traçabilité)
-- [ ] Tests de robustesse (reconnect, saturation, cancellation, exceptions) en place et verts
-- [ ] Docs à jour (contrat + runbook si impact)
+- [x] Document relu/validé et utilisé par toutes les US 2.x
+- [x] Invariants Runtime explicités et respectés (RunId, idempotence, backpressure, résilience, traçabilité)
+- [x] Tests de robustesse (reconnect, saturation, cancellation, exceptions) en place et verts
+- [x] Docs à jour (contrat + runbook si impact)
 
 ## Revue clôturée
 - (À remplir à la fin de l’Epic)
+
