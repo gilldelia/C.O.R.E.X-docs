@@ -15,6 +15,7 @@ Ce document liste les invariants stricts du runtime COREX. Toute modification do
   - Runtime : `RunId.NewRuntime(seed?)` → seedé par `event_id` ou nouveau GUID.
 - Propagation : `run_id` présent dans tous les scopes de log dès l'entrée.
 - Déduplication : `InMemoryRunIdDeduplicator` dans `RalphRuntime` ; duplicats logués (`duplicate_runid_dropped`).
+- Compteur : `_duplicateRunIdCount` incrémenté atomiquement à chaque détection de doublon, exposé en lecture seule via `DuplicateCount`.
 
 **Testé par** : `RunAsync_Deduplicates_RunId`, `RunAsync_ConcurrentDuplicateRunIds_DeduplicatesCorrectly`, `RunAsync_MixedUniqueAndDuplicateRunIds_ProcessesOnlyUnique`.
 
@@ -38,7 +39,7 @@ Ce document liste les invariants stricts du runtime COREX. Toute modification do
 
 - Mode : `BoundedChannelFullMode.DropWrite` + `TryWrite` (drop explicite si plein).
 - Logs : `backpressure_drop` avec `events.dropped`, `rate_per_minute`, `Agent`, `EventId`, `RunId`.
-- Compteur : `_droppedCount` incrémenté atomiquement à chaque drop.
+- Compteur : `_droppedCount` incrémenté atomiquement à chaque drop, exposé en lecture seule via `DroppedCount`.
 
 **Testé par** : `RunAsync_LogsBackpressureDrops`, `EventHandler_LogsWarning_WhenChannelIsFull`.
 
