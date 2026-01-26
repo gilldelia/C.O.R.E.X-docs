@@ -16,6 +16,7 @@ Ce document liste les invariants stricts du runtime COREX. Toute modification do
 - Propagation : `run_id` présent dans tous les scopes de log dès l'entrée.
 - Déduplication : `InMemoryRunIdDeduplicator` dans `RalphRuntime` ; duplicats logués (`duplicate_runid_dropped`).
 - Compteur : `_duplicateRunIdCount` incrémenté atomiquement à chaque détection de doublon, exposé en lecture seule via `DuplicateCount`.
+- Persistance cross-restart : non implémentée (in-memory accepté). Mitigation : idempotence stricte des handlers métier. Toute persistance future nécessitera une ADR dédiée.
 
 **Testé par** : `RunAsync_Deduplicates_RunId`, `RunAsync_ConcurrentDuplicateRunIds_DeduplicatesCorrectly`, `RunAsync_MixedUniqueAndDuplicateRunIds_ProcessesOnlyUnique`.
 

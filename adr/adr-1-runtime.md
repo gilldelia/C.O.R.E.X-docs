@@ -55,7 +55,7 @@ Epic 1 a introduit le runtime (Ralph loop), la modélisation du RunId, la propag
 - Runtime jamais en crash sur Slack down ; backoff max 10s.
 
 ## Mises à jour Epic 3
-- (À compléter au fur et à mesure des décisions Epic 3; toute entorse aux invariants Epic 2 nécessite ADR.)
+- Déduplication persistée cross-restart : **déférée** (dev/local accepté). Le runtime reste en dédup in-memory ; un redémarrage peut réémettre un RunId déjà vu. Mitigation : idempotence stricte côté handlers métier et logs de dédup. Si besoin de persistance légère (file/kv locale), une ADR dédiée sera requise avant implémentation.
 
 ## Impacts
 - Tests ajoutés/ajustés: RunId déterministe, propagation scopes, backoff/retry inbound, ordre séquentiel, backpressure, dédup RunId, état dégradé.
