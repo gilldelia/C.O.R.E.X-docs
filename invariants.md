@@ -36,7 +36,7 @@ Ce document liste les invariants stricts du runtime COREX. Toute modification do
 
 **Invariant** : Les drops sont loggés, jamais silencieux.
 
-- Mode : `BoundedChannelFullMode.Wait` + `TryWrite` (drop explicite si plein).
+- Mode : `BoundedChannelFullMode.DropWrite` + `TryWrite` (drop explicite si plein).
 - Logs : `backpressure_drop` avec `events.dropped`, `rate_per_minute`, `Agent`, `EventId`, `RunId`.
 - Compteur : `_droppedCount` incrémenté atomiquement à chaque drop.
 
@@ -90,6 +90,11 @@ Ce document liste les invariants stricts du runtime COREX. Toute modification do
 
 - **Plusieurs EventIds peuvent partager le même RunId** (ex. retry Slack avec même externalId).
 - **Seul le premier événement avec un RunId donné déclenche une action.**
+
+**Règle d’usage (fonctionnel)** :
+- `EventId` sert à éviter de retraiter le même message transport (socket/retry). Ne pas le retirer ni le réécrire sans besoin explicite.
+- `RunId` identifie l’unité de travail métier (1 RunId = 1 action + 1 réponse). Toute entrée doit porter un RunId dès l’entrée et être dédupliquée avant traitement métier.
+- Ne jamais confondre : une erreur fonctionnelle ne doit pas désactiver la dédup EventId ni la dédup RunId.
 
 **Testé par** : `TryMarkProcessed_DuplicateCall_ReturnsFalse`, `TryMarkProcessed_ConcurrentCalls_OnlyOneReturnsTrue`.
 

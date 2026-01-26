@@ -1,9 +1,9 @@
-# ADR Sprint 1 — Runtime, RunId, Concurrence, Résilience
+# ADR 1 — Runtime, RunId, Concurrence, Résilience
 
 ## Contexte
 Epic 1 a introduit le runtime (Ralph loop), la modélisation du RunId, la propagation des IDs d’observabilité, un modèle de concurrence single-consumer, et la résilience Slack (Socket Mode simulée). Objectif : garantir idempotence, dédup, traçabilité et robustesse locale-first.
 
-## Décisions
+## Décisions (Epic 1)
 1) RunId (Domain VO)
 - RunId = Value Object (source Runtime/External).
 - Génération :
@@ -39,6 +39,11 @@ Epic 1 a introduit le runtime (Ralph loop), la modélisation du RunId, la propag
 - Duplicats loggés avec `duplicate_runid_dropped` et compteur incrémenté.
 - Dédup appliquée dans la boucle consume de `RalphRuntime`, avant tout traitement.
 
+**Règle d’usage (EventId vs RunId)** :
+- `EventId` = dédup transport/message (réception). Ne pas la retirer : évite le retraitement du même message.
+- `RunId` = dédup métier (unité de travail). 1 RunId = 1 action + 1 réponse.
+- Les deux sont complémentaires et ne se substituent pas. Toute entorse nécessite une ADR dédiée.
+
 ### Backpressure observable (Sprint 2.2)
 - Compteur `events.dropped` et taux par minute (`rate_per_minute`) loggés sur chaque drop.
 - Log structuré `backpressure_drop` avec Agent, EventId, RunId.
@@ -48,6 +53,9 @@ Epic 1 a introduit le runtime (Ralph loop), la modélisation du RunId, la propag
 - Seuil de 3 échecs consécutifs inbound avant entrée en mode `degraded`.
 - Log `runtime.degraded=true` à l'entrée, `runtime.degraded=false` à la sortie.
 - Runtime jamais en crash sur Slack down ; backoff max 10s.
+
+## Mises à jour Epic 3
+- (À compléter au fur et à mesure des décisions Epic 3; toute entorse aux invariants Epic 2 nécessite ADR.)
 
 ## Impacts
 - Tests ajoutés/ajustés: RunId déterministe, propagation scopes, backoff/retry inbound, ordre séquentiel, backpressure, dédup RunId, état dégradé.
