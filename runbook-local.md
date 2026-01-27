@@ -105,6 +105,16 @@ Ensures config validation and structured logging pipeline are healthy.
   - Le RunId est dérivé en priorité de `event_id` Slack (si présent), avec repli sur le couple `channel:ts`, de façon déterministe via `RunId.FromExternal`.
   - Aucune logique métier dans l'adapter ; il publie uniquement dans la boucle runtime.
 
+## Comment tester US3.2 (Décision déterministe help/echo)
+- Pré-requis : mêmes secrets Slack que US3.1, runtime lancé en Local.
+- Étapes manuelles :
+  1) Lancer : `DOTNET_ENVIRONMENT=Local dotnet run --project src/Corex.App/Corex.App.csproj -c Debug`.
+  2) Envoyer sur `#corex-test` :
+     - `help` → log `runtime.decision_computed` avec `decision=ShowHelp`.
+     - `echo salut` → log `runtime.decision_computed` avec `decision=Echo`.
+     - `bonjour` → log `decision=NoAction`.
+- Notes : aucune action n'est exécutée ; seule la décision est loggée et transmise à l'étape suivante (future).
+
 ## Lint / format
 ```powershell
 # Check formatting/style (no changes)
