@@ -12,20 +12,26 @@
 _Ordered from lowest to highest precedence (later sources override earlier ones)._
 1. `appsettings.json` (required, checked in, no secrets)
 2. `appsettings.{ENVIRONMENT}.json` (optional override, e.g. Development)
-3. User secrets (`dotnet user-secrets`) scoped to `src/Corex.App/Corex.App.csproj`
-4. Environment variables prefixed `COREX__` (overrides user secrets)
+3. `appsettings.local.json` (optional, always loaded if present, regardless of environment; **note: lowercase 'local'** — casing matters on case-sensitive filesystems)
+4. User secrets (`dotnet user-secrets`) scoped to `src/Corex.App/Corex.App.csproj`
+5. Environment variables prefixed `COREX__` (highest precedence — overrides all file-based sources and user secrets)
 
-## Required secrets (fail fast at startup)
-- `ExternalServices:Slack:BotToken`
-- `ExternalServices:Slack:SigningSecret`
-- `ExternalServices:Trello:ApiKey`
-- `ExternalServices:Trello:ApiToken`
+## Required secrets (fail fast per service)
+- Slack (enabled by default)
+  - `ExternalServices:Slack:BotToken`
+  - `ExternalServices:Slack:AppLevelToken` (Socket Mode)
+  - `ExternalServices:Slack:SigningSecret`
+- Trello (disabled by default; set `ExternalServices:Trello:Enabled=true` when a Trello feature is active)
+  - `ExternalServices:Trello:ApiKey`
+  - `ExternalServices:Trello:ApiToken`
 
-Startup exits with code `1` if required configuration (including these secrets) is missing or invalid (options validation failure).
+Startup exits with code `2` if required configuration for any enabled service is missing or invalid (options validation failure).
 
 ### Environment variables (examples)
 - `COREX__EXTERNALSERVICES__SLACK__BOTTOKEN`
+- `COREX__EXTERNALSERVICES__SLACK__APPLEVELTOKEN`
 - `COREX__EXTERNALSERVICES__SLACK__SIGNINGSECRET`
+- `COREX__EXTERNALSERVICES__TRELLO__ENABLED=true`
 - `COREX__EXTERNALSERVICES__TRELLO__APIKEY`
 - `COREX__EXTERNALSERVICES__TRELLO__APITOKEN`
 - `DOTNET_ENVIRONMENT=Development` (dev mode)
@@ -70,10 +76,10 @@ Get-Content .env | ForEach-Object {
 ## Run locally
 ```powershell
 # Dev logs + hot reload
-./scripts/run.ps1 -Dev -Watch
+DOTNET_ENVIRONMENT=Local dotnet watch run --project src/Corex.App/Corex.App.csproj -c Debug
 
 # Run once (debug)
-./scripts/run.ps1 -Dev
+DOTNET_ENVIRONMENT=Local dotnet run --project src/Corex.App/Corex.App.csproj -c Debug
 ```
 
 ## Verify
@@ -81,6 +87,23 @@ Get-Content .env | ForEach-Object {
 ./scripts/test.ps1
 ```
 Ensures config validation and structured logging pipeline are healthy.
+
+## Comment tester US3.1 (Slack Socket Mode → Runtime)
+- Pré-requis :
+  - Variables d'environnement Slack renseignées (tokens Socket Mode) via user-secrets ou env (`ExternalServices:Slack:*`). Aucun secret dans le repo.
+  - Canal Slack de test (ex. `#corex-test`).
+- Étapes manuelles (2-5 min) :
+ 1) Lancer le runtime local (`DOTNET_ENVIRONMENT=Local dotnet run --project src/Corex.App/Corex.App.csproj -c Debug`).
+  2) Envoyer un message "ping 1" sur le canal de test.
+  3) Vérifier les logs structurés :
+     - `slack.message_received` (channel, ts, user, text)
+     - `runtime.runid_assigned` (run_id dérivé de l'event Slack)
+     - `runtime.message_enqueued` (run_id, event_id)
+  4) Renvoyer "ping 1" : pas de dédup sur le contenu (le contenu seul ne déduplique pas).
+  5) Si vous rejouez exactement le même event Slack (même `event_id`, ou même couple channel+ts si `event_id` absent), vérifier un `duplicate_runid_dropped` (dédup RunId avant traitement).
+- Notes :
+  - Le RunId est dérivé en priorité de `event_id` Slack (si présent), avec repli sur le couple `channel:ts`, de façon déterministe via `RunId.FromExternal`.
+  - Aucune logique métier dans l'adapter ; il publie uniquement dans la boucle runtime.
 
 ## Lint / format
 ```powershell

@@ -38,18 +38,18 @@
 ## Quickstart (5 minutes)
 1. Prérequis : SDK .NET 10.0 en préversion (installer la dernière préversion depuis https://dotnet.microsoft.com/).
 2. Restore : `dotnet restore C.O.R.E.X.sln` (ou `./scripts/test.ps1` fera le restore).
-3. Run (dev, logs verbeux) : `./scripts/run.ps1 -Dev`.
-4. Hot reload (dev) : `./scripts/run.ps1 -Dev -Watch`.
+3. Run (dev, logs verbeux) : `DOTNET_ENVIRONMENT=Local dotnet run --project src/Corex.App/Corex.App.csproj -c Debug`.
+4. Hot reload (dev) : `DOTNET_ENVIRONMENT=Local dotnet watch run --project src/Corex.App/Corex.App.csproj -c Debug`.
 5. Tests : `./scripts/test.ps1`.
 6. Format : `./scripts/format.ps1` (lint sans modifier : `./scripts/lint.ps1`).
 
 Notes
-- Secrets Slack/Trello requis pour un run complet ; fakes par défaut.
-- Logs en dev au niveau `Debug` via `-Dev`.
+- Secrets Slack requis : `BotToken`, `AppLevelToken` (Socket Mode), `SigningSecret`. Trello requis seulement si activé (`Enabled=true`).
+- Logs en dev au niveau `Debug` via `DOTNET_ENVIRONMENT=Local` (config Serilog) + commandes ci-dessus.
 - Sortie structurée : console + `logs/corex.log`.
 
 ## Dev loop
-- Boucle rapide : `./scripts/run.ps1 -Dev -Watch`, puis `./scripts/test.ps1` avant commit.
+- Boucle rapide : `DOTNET_ENVIRONMENT=Local dotnet watch run --project src/Corex.App/Corex.App.csproj -c Debug`, puis `./scripts/test.ps1` avant commit.
 - Lint check : `./scripts/lint.ps1` (échoue si format/style non conforme).
 
 ## CI / PR
