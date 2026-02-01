@@ -115,6 +115,17 @@ Ensures config validation and structured logging pipeline are healthy.
      - `bonjour` → log `decision=NoAction`.
 - Notes : aucune action n'est exécutée ; seule la décision est loggée et transmise à l'étape suivante (future).
 
+## Comment tester US3.3 (Action Slack help/echo)
+- Pré-requis : Slack Socket mode configuré (tokens bot/app-level) et canal de test.
+- Étapes :
+  1) Lancer : `DOTNET_ENVIRONMENT=Local dotnet run --project src/Corex.App/Corex.App.csproj -c Debug`.
+  2) Envoyer :
+     - `help` → log `runtime.action_selected` action=ShowHelp puis `slack.message_posted` (run_id, channel, ts). Vérifier le message d'aide posté par COREX.
+     - `echo hello` → log `runtime.action_selected` action=Echo puis `slack.message_posted`; message Slack doit être "hello".
+     - `bonjour` → log `runtime.action_selected` action=NoAction; aucun post Slack.
+  3) (Option) simuler un doublon Slack (ne pas ACK) : vérifier `duplicate_runid_dropped` et absence de second `slack.message_posted`.
+- Notes : l'idempotence repose sur le RunId (dérivé event_id ou channel:ts). Aucune action n'est exécutée si le channel est absent.
+
 ## Lint / format
 ```powershell
 # Check formatting/style (no changes)
