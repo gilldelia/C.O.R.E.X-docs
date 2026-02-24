@@ -126,6 +126,20 @@ Ensures config validation and structured logging pipeline are healthy.
   3) (Option) simuler un doublon Slack (ne pas ACK) : vérifier `duplicate_runid_dropped` et absence de second `slack.message_posted`.
 - Notes : l'idempotence repose sur le RunId (dérivé event_id ou channel:ts). Aucune action n'est exécutée si le channel est absent.
 
+## Comment tester US3.6 (Gestion d'erreurs — pas de crash)
+- Pré-requis : runtime lancé en Local avec Slack configuré.
+- Étapes :
+  1) Lancer : `DOTNET_ENVIRONMENT=Local dotnet run --project src/Corex.App/Corex.App.csproj -c Debug`.
+  2) Envoyer `fail test` sur `#corex-test` :
+     - Log `runtime.event.decision` avec `decision=Fail`.
+     - Log `runtime.event.action` avec `outcome=Failed reason=InvalidOperationException message=Simulated failure: test`.
+     - **Aucun crash** : le runtime reste actif.
+  3) Envoyer `echo ok` juste après :
+     - Log `runtime.event.decision` avec `decision=Echo`.
+     - Log `runtime.event.action` avec `outcome=Success action=Echo`.
+     - **Slack** : COREX poste "ok".
+- Validation : le RunId du `fail` est présent dans le scope du log d'erreur ; le `echo ok` suivant fonctionne normalement.
+
 ## Lint / format
 ```powershell
 # Check formatting/style (no changes)
