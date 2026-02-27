@@ -1,6 +1,6 @@
 # Epic 3 — Smoke Tests Fonctionnels
 
-**Objectif** : Valider US3.1, US3.2, US3.3 en < 10 minutes sur un environnement local propre.
+**Objectif** : Valider US3.1 à US3.6 en < 10 minutes sur un environnement local propre.
 
 ---
 
@@ -40,22 +40,20 @@ slack.socket.hello received
 
 | Action | Attendu (logs) |
 |--------|----------------|
-| Envoyer `ping 1` sur `#corex-test` | `slack.message_received channel=… ts=… user=… text=ping 1` |
-| | `runtime.runid_assigned run_id=… external_id=…` |
-| | `runtime.message_enqueued run_id=… event_id=…` |
-| | `Agent event received for bootstrap-agent` |
+| Envoyer `ping 1` sur `#corex-test` | `runtime.event.received stage=Received outcome=Success channel=… text_preview=ping 1` |
+| | `Agent event processing for bootstrap-agent` (niveau Debug) |
 
-✅ **US3.1 validée** si ces 4 logs apparaissent.
+✅ **US3.1 validée** si ces logs apparaissent.
 
 ---
 
 ## Scénario 2 — US3.2 : Décision déterministe
 
-| Message envoyé | Attendu (`runtime.decision_computed`) |
+| Message envoyé | Attendu (`runtime.event.decision`) |
 |----------------|---------------------------------------|
-| `help` | `decision=ShowHelp reason=prefix=help` |
-| `echo salut` | `decision=Echo reason=prefix=echo` |
-| `bonjour` | `decision=NoAction reason=default` |
+| `help` | `decision=ShowHelp decision_reason=prefix=help` |
+| `echo salut` | `decision=Echo decision_reason=prefix=echo` |
+| `bonjour` | `decision=NoAction decision_reason=default` |
 
 ✅ **US3.2 validée** si chaque message produit la décision attendue.
 
@@ -65,13 +63,11 @@ slack.socket.hello received
 
 | Message envoyé | Attendu (logs + Slack) |
 |----------------|------------------------|
-| `help` | Log `runtime.action_selected action=ShowHelp` |
-| | Log `slack.message_posted run_id=… channel=… ts=…` |
-| | **Slack** : COREX poste "COREX help: commands -> help, echo <text>." |
-| `echo hello` | Log `runtime.action_selected action=Echo` |
-| | Log `slack.message_posted …` |
+| `help` | Log `runtime.event.action stage=Action outcome=Success action=ShowHelp` |
+| | **Slack** : COREX poste "COREX help: commands -> help, echo \<text\>." |
+| `echo hello` | Log `runtime.event.action stage=Action outcome=Success action=Echo` |
 | | **Slack** : COREX poste "hello" |
-| `bonjour` | Log `runtime.action_selected action=NoAction` |
+| `bonjour` | Log `runtime.event.action stage=Action outcome=Skipped action=NoAction reason=no_action_required` |
 | | **Pas de post Slack** |
 
 ✅ **US3.3 validée** si les réponses Slack correspondent et les logs sont présents.
@@ -92,8 +88,8 @@ Pour simuler un doublon Slack (même `event_id`/`ts`) :
 
 | Attendu |
 |---------|
-| 1er passage : `slack.message_posted` |
-| 2e passage : `duplicate_runid_dropped` (pas de second `slack.message_posted`) |
+| 1er passage : `runtime.event.action outcome=Success` |
+| 2e passage : `runtime.event.received outcome=Dropped reason=duplicate_runid` (pas de second post) |
 
 5. **Remettre l'ACK** après le test.
 
@@ -105,10 +101,12 @@ Pour simuler un doublon Slack (même `event_id`/`ts`) :
 
 | US | Critère | ✅ / ❌ |
 |----|---------|--------|
-| US3.1 | Logs `slack.message_received`, `runtime.runid_assigned`, `runtime.message_enqueued` | |
-| US3.2 | `runtime.decision_computed` correct pour help/echo/autre | |
-| US3.3 | `runtime.action_selected` + `slack.message_posted` + réponse Slack visible | |
-| (opt) | Doublon → `duplicate_runid_dropped`, pas de double post | |
+| US3.1 | Log `runtime.event.received stage=Received outcome=Success` | |
+| US3.2 | `runtime.event.decision` correct pour help/echo/autre | |
+| US3.3 | `runtime.event.action outcome=Success` + réponse Slack visible | |
+| US3.5 | Chaque log de flux contient `stage` + `outcome` ; `run_id` dans le scope | |
+| US3.6 | `fail test` → erreur loggée, runtime survit, `echo ok` fonctionne après | |
+| (opt) | Doublon → `outcome=Dropped reason=duplicate_runid`, pas de double post | |
 
 ---
 
@@ -119,8 +117,10 @@ Pour simuler un doublon Slack (même `event_id`/`ts`) :
 | Lancement runtime | 30s |
 | Scénario 1 (US3.1) | 1 min |
 | Scénario 2 (US3.2) | 2 min |
-| Scénario 3 (US3.3) | 3 min |
-| Scénario 4 (optionnel) | 3 min |
+| Scénario 3 (US3.3) | 2 min |
+| Scénario 5 (US3.5 — vérif logs) | 1 min |
+| Scénario 6 (US3.6 — fail + echo) | 2 min |
+| Scénario 4 (optionnel — doublon) | 3 min |
 | **Total** | **< 10 min** |
 
 ---
@@ -131,8 +131,57 @@ Pour simuler un doublon Slack (même `event_id`/`ts`) :
 |----------|----------|
 | `slack.socket.open_url` échoue | Vérifier `AppLevelToken` (Socket Mode activé sur l'app Slack) |
 | `slack.message_posted` absent | Vérifier `BotToken` (scope `chat:write`) et app jointe au canal |
-| `runtime.action_skipped channel_missing` | Le channel n'est pas remonté ; vérifier le payload Slack |
-| `duplicate_runid_dropped` inattendu | RunId identique (même event_id ou channel:ts) ; comportement normal si retry Slack |
+| `runtime.event.action stage=Action outcome=Skipped` | Le channel n'est pas remonté ; vérifier le payload Slack |
+| `outcome=Dropped reason=duplicate_runid` inattendu | RunId identique (même event_id ou channel:ts) ; comportement normal si retry Slack |
+
+---
+
+## Scénario 5 — US3.5 : Contrat de logs
+
+Après avoir envoyé `echo hello` (scénario 3), vérifier dans les logs :
+
+| Étape | Log attendu | Champs |
+|-------|-------------|--------|
+| Received | `runtime.event.received` | `stage=Received`, `outcome=Success`, `run_id`, `event_id` |
+| Decision | `runtime.event.decision` | `stage=Decision`, `outcome=Success`, `decision=Echo` |
+| Action | `runtime.event.action` | `stage=Action`, `outcome=Success`, `action=Echo` |
+
+Vérifier que le `run_id` est **constant** sur les 3 lignes (présent dans le scope Serilog : suffixe `corr=... agent=... event=...`).
+
+✅ **US3.5 validée** si les 3 stages sont présents avec le même run_id.
+
+---
+
+## Scénario 6 — US3.6 : Gestion d'erreurs (pas de crash)
+
+| Action | Attendu |
+|--------|---------|
+| Envoyer `fail test` | Log `runtime.event.decision decision=Fail` |
+| | Log `runtime.event.error stage=Action outcome=Failed reason=InvalidOperationException` |
+| | **Runtime reste actif** (pas de crash) |
+| Envoyer `echo ok` juste après | Log `runtime.event.action stage=Action outcome=Success action=Echo` |
+| | **Slack** : COREX poste "ok" |
+
+✅ **US3.6 validée** si le runtime survit au `fail` et traite normalement l'`echo` suivant.
+
+---
+
+## Archivage des preuves
+
+Après la démo, archiver les logs pour traçabilité :
+
+```powershell
+New-Item -ItemType Directory -Force -Path artifacts/epic3
+Copy-Item logs/corex*.log artifacts/epic3/
+```
+
+> `artifacts/` est gitignored — les logs ne seront pas commités.
+
+Pour une preuve plus complète, copier aussi la sortie console dans un fichier :
+```powershell
+# Relancer le runtime avec tee :
+DOTNET_ENVIRONMENT=Local dotnet run --project src/Corex.App/Corex.App.csproj -c Debug 2>&1 | Tee-Object -FilePath artifacts/epic3/console-output.log
+```
 
 ---
 
